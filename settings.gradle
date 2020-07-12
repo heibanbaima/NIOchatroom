@@ -1,0 +1,3 @@
+rootProject.name = 'NIOchatroom'
+include 'server'
+
