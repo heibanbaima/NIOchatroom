@@ -1,6 +1,7 @@
 package impl;
 
 import core.IoProvider;
+import utils.CloseUtils;
 
 import java.io.IOException;
 import java.nio.channels.ClosedChannelException;
@@ -98,8 +99,39 @@ public class IoSelectorProvider {
     }
 
     @Override
-    public boolean registerInput(SocketChannel channel, IoProvider.HandleInputCallback callback){
-        return registerSelection
+    public boolean registerInput(SocketChannel channel, HandleInputCallback callback){
+        return registerSelection(channel,readSelector,SelectionKey.OP_READ,inRegInput,inputCallbackMap,callback) != null;
+    }
+
+    @Override
+    public boolean registerOutput(SocketChannel channel, HandleOutputCallback callback){
+        return registerSelection(channel,writeSelector,SelectionKey.OP_WRITE,inRegOutput,outputCallbackMap,callback) !=null;
+    }
+
+    @Override
+    public void unRegisterInput(SocketChannel channel){
+        unRegisterSelection(channel,readSelector,inputCallbackMap);
+    }
+
+    @Override
+    public void unRegisterOutput(SocketChannel channel){
+        unRegisterSelection(channel,writeSelector,outputCallbackMap);
+    }
+
+    @Override
+    public void close(){
+        if (isClosed.compareAndSet(false,true)){
+            inputHandlePool.shutdown();
+            outputHandlePool.shutdown();
+
+            inputCallbackMap.clear();
+            outputCallbackMap.clear();
+
+            readSelector.wakeup();
+            writeSelector.wakeup();
+
+            CloseUtils.close(readSelector,writeSelector);
+        }
     }
 
     private static void waitSelection(final AtomicBoolean locker){
