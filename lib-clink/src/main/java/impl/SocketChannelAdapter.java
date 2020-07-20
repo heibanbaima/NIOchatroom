@@ -50,6 +50,16 @@ public class SocketChannelAdapter implements Sender, Receiver,Cloneable {
         return ioProvider.registerOutput(channel,outputCallback);
     }
 
+    @Override
+    public void close(){
+        if (isClosed.compareAndSet(false,true)){
+            ioProvider.unRegisterInput(channel);
+            ioProvider.unRegisterOutput(channel);
+            CloseUtils.close(channel);
+            listener.onChannelClosed(channel);
+        }
+    }
+
     private final IoProvider.HandleInputCallback inputCallback = new IoProvider.HandleInputCallback() {
         @Override
         protected void canProviderInput() {
